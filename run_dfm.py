@@ -9,43 +9,22 @@ from deepctr.feature_column import SparseFeat, DenseFeat, get_feature_names
 if __name__ == "__main__":
     # data = pd.read_csv('./criteo_sample.txt')
     # data = pd.read_csv('./test.csv')
-    data = pd.read_csv('/tmp/data/data_before_0510_smotenc.csv')
-    test = pd.read_csv('/tmp/data/test.csv')
+    # input_test = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+    data = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+    # data = pd.read_csv('/tmp/data/avazu_data_100w_FE_smotenc.csv')
+    # data = pd.read_csv('/tmp/data/avazu_data_100w_FE_smotenn.csv')
+    # test = pd.read_csv('/tmp/data/test.csv')
 
-    # sparse_features = ['C' + str(i) for i in range(1, 27)]
-    # dense_features = ['I' + str(i) for i in range(1, 14)]
-    dense_features = ['price']
+    train = data[data['day'] < 29]
+    test = data[data['day'] >= 29]
+    train.drop(columns=['id', 'day'], inplace=True)
+    test.drop(columns=['id', 'day'], inplace=True)
 
-    sparse_features = ['cms_segid',
-                       'cms_group_id',
-                       'final_gender_code',
-                       'age_level',
-                       'pvalue_level',
-                       'new_user_class_level',
-                       'adgroup_id',
-                       'pid',
-                       'cate_id',
-                       'campaign_id',
-                       'customer',
-                       'brand', ]
-
-    data[sparse_features] = data[sparse_features].fillna('-1', )
-    data[dense_features] = data[dense_features].fillna(0, )
-
-    test[sparse_features] = test[sparse_features].fillna('-1', )
-    test[dense_features] = test[dense_features].fillna(0, )
-
+    sparse_features = ['C1', 'banner_pos', 'site_category', 'app_category',
+                       'device_type', 'device_conn_type', 'C18', 'hour', 'is_device', 'C_pix']
+    dense_features = ['C_site_id', 'C_site_domain', 'C_app_id', 'C_app_domain', 'C_device_ip',
+                      'C_device_model', 'C_C14', 'C_C17', 'C_C19', 'C_C20', 'C_C21']
     target = ['click']
-
-    # 1.Label Encoding for sparse features,and do simple Transformation for dense features
-    for feat in sparse_features:
-        lbe = LabelEncoder()
-        data[feat] = lbe.fit_transform(data[feat])
-        test[feat] = lbe.fit_transform(test[feat])
-    mms = MinMaxScaler(feature_range=(0, 1))
-    data[dense_features] = mms.fit_transform(data[dense_features])
-    test[dense_features] = mms.fit_transform(test[dense_features])
-
     # 2.count #unique features for each sparse field,and record dense feature field name
 
     fixlen_feature_columns = [SparseFeat(feat, vocabulary_size=data[feat].nunique(), embedding_dim=4)
@@ -60,8 +39,6 @@ if __name__ == "__main__":
     # 3.generate input data for model
 
     # train, test = train_test_split(data, test_size=0.2, random_state=2020)
-    train = data
-
     train_model_input = {name: train[name] for name in feature_names}
     test_model_input = {name: test[name] for name in feature_names}
 
@@ -71,7 +48,7 @@ if __name__ == "__main__":
                   metrics=['binary_crossentropy'], )
 
     history = model.fit(train_model_input, train[target].values,
-                        batch_size=256, epochs=10, verbose=2, validation_split=0.2, )
+                        batch_size=256, epochs=20, verbose=2, validation_split=0.2, )
     pred_ans = model.predict(test_model_input, batch_size=256)
     print("test LogLoss", round(log_loss(test[target].values, pred_ans), 4))
     print("test AUC", round(roc_auc_score(test[target].values, pred_ans), 4))
