@@ -1,10 +1,9 @@
 import pandas as pd
+from deepctr.feature_column import SparseFeat, get_feature_names, DenseFeat
 from sklearn.metrics import log_loss, roc_auc_score
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+import tensorflow as tf
 
 from deepctr.models import *
-from deepctr.feature_column import SparseFeat, DenseFeat, get_feature_names
 
 if __name__ == "__main__":
     # data = pd.read_csv('./criteo_sample.txt')
@@ -46,10 +45,12 @@ if __name__ == "__main__":
     # use_bn=False mean that it not use bn after ffm out
     model = ONN(linear_feature_columns, dnn_feature_columns, task='binary', use_bn=False)
     model.compile("adam", "binary_crossentropy",
-                  metrics=['binary_crossentropy'], )
+                  metrics=["accuracy", "binary_crossentropy"])
+
+    logs = tf.keras.callbacks.TensorBoard(log_dir='./log/ffm_raw_log', histogram_freq=1)
 
     history = model.fit(train_model_input, train[target].values,
-                        batch_size=256, epochs=2, verbose=2, validation_split=0.2, )
+                        batch_size=256, epochs=500, verbose=2, validation_split=0.2, callbacks=[logs])
     pred_ans = model.predict(test_model_input, batch_size=256)
     print("test LogLoss", round(log_loss(test[target].values, pred_ans), 4))
     print("test AUC", round(roc_auc_score(test[target].values, pred_ans), 4))

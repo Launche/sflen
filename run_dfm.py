@@ -1,7 +1,6 @@
 import pandas as pd
 from sklearn.metrics import log_loss, roc_auc_score
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+import tensorflow as tf
 
 from deepctr.models import *
 from deepctr.feature_column import SparseFeat, DenseFeat, get_feature_names
@@ -18,6 +17,10 @@ if __name__ == "__main__":
     train = data[data['day'] < 29]
     test = data[data['day'] >= 29]
     train.drop(columns=['id', 'day'], inplace=True)
+
+    # train = data
+    # test = input_test[input_test['day'] >= 29]
+
     test.drop(columns=['id', 'day'], inplace=True)
 
     sparse_features = ['C1', 'banner_pos', 'site_category', 'app_category',
@@ -45,10 +48,19 @@ if __name__ == "__main__":
     # 4.Define Model,train,predict and evaluate
     model = DeepFM(linear_feature_columns, dnn_feature_columns, task='binary', dnn_dropout=0.4)
     model.compile("adam", "binary_crossentropy",
-                  metrics=['binary_crossentropy'], )
+                  metrics=["accuracy", "binary_crossentropy"])
+    # model.summary()
+
+    logs = tf.keras.callbacks.TensorBoard(log_dir='./log/dfm_raw_log', histogram_freq=1)
+    # logs = tf.keras.callbacks.TensorBoard(log_dir='./log/dfm_enc_log', histogram_freq=1)
+    # logs = tf.keras.callbacks.TensorBoard(log_dir='./log/dfm_enn_log', histogram_freq=1)
 
     history = model.fit(train_model_input, train[target].values,
-                        batch_size=256, epochs=20, verbose=2, validation_split=0.2, )
+                        batch_size=256, epochs=500, verbose=2, validation_split=0.2,
+                        callbacks=[logs])
+
     pred_ans = model.predict(test_model_input, batch_size=256)
+
+    # print(pred_ans)
     print("test LogLoss", round(log_loss(test[target].values, pred_ans), 4))
     print("test AUC", round(roc_auc_score(test[target].values, pred_ans), 4))
