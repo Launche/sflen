@@ -1,3 +1,6 @@
+import os
+import sys
+
 import pandas as pd
 from deepctr.feature_column import SparseFeat, get_feature_names, DenseFeat
 from sklearn.metrics import log_loss, roc_auc_score
@@ -5,25 +8,19 @@ import tensorflow as tf
 
 from deepctr.models import *
 
+from constant import *
+from data_source import get_data
+from plot_curves import history_curves
+
 if __name__ == "__main__":
-    # data = pd.read_csv('./criteo_sample.txt')
-    # data = pd.read_csv('./test.csv')
-    # input_test = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
-    data = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
-    # data = pd.read_csv('/tmp/data/avazu_data_100w_FE_smotenc.csv')
-    # data = pd.read_csv('/tmp/data/avazu_data_100w_FE_smotenn.csv')
-    # test = pd.read_csv('/tmp/data/test.csv')
 
-    train = data[data['day'] < 29]
-    test = data[data['day'] >= 29]
-    train.drop(columns=['id', 'day'], inplace=True)
-    test.drop(columns=['id', 'day'], inplace=True)
+    # 1.prepare data and define epochs
+    epochs = 10
+    if sys.argv.__len__() == 3:
+        data_type = sys.argv[1]
+        epochs = sys.argv[2]
 
-    sparse_features = ['C1', 'banner_pos', 'site_category', 'app_category',
-                       'device_type', 'device_conn_type', 'C18', 'hour', 'is_device', 'C_pix']
-    dense_features = ['C_site_id', 'C_site_domain', 'C_app_id', 'C_app_domain', 'C_device_ip',
-                      'C_device_model', 'C_C14', 'C_C17', 'C_C19', 'C_C20', 'C_C21']
-    target = ['click']
+    data, train, test = get_data(data_type)
 
     # 2.count #unique features for each sparse field,and record dense feature field name
 
@@ -43,14 +40,19 @@ if __name__ == "__main__":
 
     # 4.Define Model,train,predict and evaluate
     # use_bn=False mean that it not use bn after ffm out
-    model = ONN(linear_feature_columns, dnn_feature_columns, task='binary', use_bn=False)
+    model = ONN(linear_feature_columns, dnn_feature_columns, task='binary', use_bn=False, dnn_dropout=0.5)
     model.compile("adam", "binary_crossentropy",
-                  metrics=["accuracy", "binary_crossentropy"])
+                  metrics=METRICS)
 
-    logs = tf.keras.callbacks.TensorBoard(log_dir='./log/ffm_raw_log', histogram_freq=1)
+    log_dir = './log/ffm_' + data_type + '_' + epochs
+    if not os.path.exists(log_dir):  # 如果路径不存在
+        os.makedirs(log_dir)
+
+    logs = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     history = model.fit(train_model_input, train[target].values,
-                        batch_size=256, epochs=500, verbose=2, validation_split=0.2, callbacks=[logs])
+                        batch_size=256, epochs=epochs, verbose=2, validation_split=0.2, callbacks=[logs])
     pred_ans = model.predict(test_model_input, batch_size=256)
     print("test LogLoss", round(log_loss(test[target].values, pred_ans), 4))
     print("test AUC", round(roc_auc_score(test[target].values, pred_ans), 4))
+    history_curves(history)
