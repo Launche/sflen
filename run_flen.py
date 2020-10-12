@@ -57,10 +57,22 @@ if __name__ == "__main__":
     train_model_input = {name: train[name] for name in feature_names}
     test_model_input = {name: test[name] for name in feature_names}
 
+    METRICS = [
+        tf.keras.metrics.TruePositives(name='tp'),
+        tf.keras.metrics.FalsePositives(name='fp'),
+        tf.keras.metrics.TrueNegatives(name='tn'),
+        tf.keras.metrics.FalseNegatives(name='fn'),
+        # tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+        # tf.keras.metrics.Precision(name='precision'),
+        # tf.keras.metrics.Recall(name='recall'),
+        tf.keras.metrics.AUC(name='auc'),
+    ]
+
+
     # 4.Define Model,train,predict and evaluate
-    model = FLEN(linear_feature_columns, dnn_feature_columns, task='binary', dnn_dropout=0.4)
+    model = FLEN(linear_feature_columns, dnn_feature_columns, task='binary', dnn_dropout=0.8)
     model.compile("adam", "binary_crossentropy",
-                  metrics=["accuracy", "binary_crossentropy"])
+                  metrics=METRICS)
 
     logs = tf.keras.callbacks.TensorBoard(log_dir='./log/flen_raw_log', histogram_freq=1)
 
