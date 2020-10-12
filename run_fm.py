@@ -17,7 +17,7 @@ if __name__ == "__main__":
     epochs = 10
     if sys.argv.__len__() == 3:
         data_type = sys.argv[1]
-        epochs = sys.argv[2]
+        epochs = int(sys.argv[2])
 
     data, train, test = get_data(data_type)
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     model.compile("adam", "binary_crossentropy",
                   metrics=METRICS)
 
-    log_dir = './log/fm_' + data_type + '_' + epochs
+    log_dir = './log/fm_' + data_type + '_' + str(epochs)
     if not os.path.exists(log_dir):  # 如果路径不存在
         os.makedirs(log_dir)
 
