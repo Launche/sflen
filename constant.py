@@ -19,4 +19,8 @@ METRICS = [
     # tf.keras.metrics.Recall(name='recall'),
 ]
 
-data_type = "enn"
+prefix_dir = './tensor_log/'
+
+data_type = "tlk"
+
+

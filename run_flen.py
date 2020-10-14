@@ -1,20 +1,19 @@
 import os
 import sys
 
-from sklearn.metrics import log_loss, roc_auc_score
-import tensorflow as tf
 
 from deepctr.feature_column import SparseFeat, get_feature_names
 from deepctr.models import FLEN
-
 from constant import *
-from data_source import get_data
-from plot_curves import history_curves
+from utils import get_data, output
 
 if __name__ == "__main__":
 
     # 1.prepare data and define epochs
-    epochs = 10
+    epochs = 100
+    optimizer = "adam"
+    dropout = 0.5
+
     if sys.argv.__len__() == 3:
         data_type = sys.argv[1]
         epochs = int(sys.argv[2])
@@ -50,11 +49,11 @@ if __name__ == "__main__":
     test_model_input = {name: test[name] for name in feature_names}
 
     # 4.Define Model,train,predict and evaluate
-    model = FLEN(linear_feature_columns, dnn_feature_columns, task='binary', dnn_dropout=0.6)
-    model.compile("adam", "binary_crossentropy",
+    model = FLEN(linear_feature_columns, dnn_feature_columns, task='binary', dnn_dropout=dropout, dnn_use_bn=True)
+    model.compile(optimizer, "binary_crossentropy",
                   metrics=METRICS)
 
-    log_dir = './log/flen_' + data_type + '_' + str(epochs)
+    log_dir = prefix_dir + 'flen_' + data_type + '_' + str(epochs)
     if not os.path.exists(log_dir):  # 如果路径不存在
         os.makedirs(log_dir)
 
@@ -63,6 +62,4 @@ if __name__ == "__main__":
     history = model.fit(train_model_input, train[target].values,
                         batch_size=256, epochs=epochs, verbose=2, validation_split=0.2, callbacks=[logs])
     pred_ans = model.predict(test_model_input, batch_size=256)
-    print("test LogLoss", round(log_loss(test[target].values, pred_ans), 4))
-    print("test AUC", round(roc_auc_score(test[target].values, pred_ans), 4))
-    history_curves(history)
+    output(history, test, pred_ans, target, 'flen', data_type, epochs, optimizer, dropout)
