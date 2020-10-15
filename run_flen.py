@@ -1,24 +1,29 @@
 import os
 import sys
+import pandas as pd
 
 
 from deepctr.feature_column import SparseFeat, get_feature_names
 from deepctr.models import FLEN
+from sklearn.model_selection import train_test_split
+
 from constant import *
 from utils import get_data, output
 
 if __name__ == "__main__":
 
     # 1.prepare data and define epochs
-    epochs = 100
+    epochs = 10
     optimizer = "adam"
-    dropout = 0.5
+    dropout = 0
 
     if sys.argv.__len__() == 3:
         data_type = sys.argv[1]
         epochs = int(sys.argv[2])
 
-    data, train, test = get_data(data_type)
+    # data, train, test = get_data(data_type)
+
+    data = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
 
     # 2.count #unique features for each sparse field,and record dense feature field name
 
@@ -36,7 +41,7 @@ if __name__ == "__main__":
 
     fixlen_feature_columns = [
         SparseFeat(name, vocabulary_size=data[name].nunique(), embedding_dim=16, use_hash=False, dtype='int32',
-                   group_name=field_info[name]) for name in sparse_features]
+                   group_name=field_info[name]) for name in flen_sparse_features]
 
     dnn_feature_columns = fixlen_feature_columns
     linear_feature_columns = fixlen_feature_columns
@@ -44,7 +49,7 @@ if __name__ == "__main__":
     feature_names = get_feature_names(linear_feature_columns + dnn_feature_columns)
 
     # 3.generate input data for model
-    # train, test = train_test_split(data, test_size=0.2)
+    train, test = train_test_split(data, test_size=0.2)
     train_model_input = {name: train[name] for name in feature_names}
     test_model_input = {name: test[name] for name in feature_names}
 

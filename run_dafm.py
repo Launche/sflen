@@ -11,7 +11,7 @@ if __name__ == "__main__":
     epochs = 100
     optimizer = "adam"
     dnn_dropout = 0.5
-    afm_dropout = 0.8
+    afm_dropout = 0.6
     dropout = 'dnn_dropout: ' + str(dnn_dropout) + ';afm_dropout: ' + str(afm_dropout)
 
     if sys.argv.__len__() == 3:
