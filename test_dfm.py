@@ -7,11 +7,10 @@ from deepctr.models import *
 from deepctr.feature_column import SparseFeat, DenseFeat, get_feature_names
 
 if __name__ == "__main__":
-    # data = pd.read_csv('/tmp/data/small_train.csv')
-    data = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+    data = pd.read_csv('/tmp/data/small_train.csv')
+    # data = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
     # train = data
     # test = input_test[input_test['day'] >= 29]
-    print("This model is using smote data ...")
     # sparse_features = ['C' + str(i) for i in range(1, 27)]
     # dense_features = ['I' + str(i) for i in range(1, 14)]
 
@@ -32,9 +31,9 @@ if __name__ == "__main__":
     target = ['click']
 
     # 1.Label Encoding for sparse features,and do simple Transformation for dense features
-    # for feat in sparse_features:
-    #     lbe = LabelEncoder()
-    #     data[feat] = lbe.fit_transform(data[feat])
+    for feat in sparse_features:
+        lbe = LabelEncoder()
+        data[feat] = lbe.fit_transform(data[feat])
     # mms = MinMaxScaler(feature_range=(0, 1))
     # data[dense_features] = mms.fit_transform(data[dense_features])
 
