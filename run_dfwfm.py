@@ -1,18 +1,27 @@
 import os
 import sys
-from deepctr.feature_column import SparseFeat, DenseFeat, get_feature_names
-from constant import *
+
+from sklearn.metrics import log_loss, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+import pandas as pd
+from tensorflow.python.debug.examples.v1.debug_keras import tf
+
+from deepctr.models import *
+from deepctr.feature_column import SparseFeat, get_feature_names, DenseFeat
+from models.deepfwfm import DeepFWFM
+
+from constant import sparse_features, METRICS, prefix_dir, target, dense_features
+
 from utils import get_data, output
-from models.deepfm import DeepFM2
 
 if __name__ == "__main__":
 
     # 1.prepare data and define epochs
-    epochs = 100
+    epochs = 10
     optimizer = "adam"
-    dnn_dropout = 0.5
-    afm_dropout = 0.6
-    dropout = 'dnn_dropout: ' + str(dnn_dropout) + ';afm_dropout: ' + str(afm_dropout)
+    dropout = 0.5
+    data_type = 'raw'
 
     if sys.argv.__len__() == 3:
         data_type = sys.argv[1]
@@ -21,11 +30,9 @@ if __name__ == "__main__":
     data, train, test = get_data(data_type)
 
     # 2.count #unique features for each sparse field,and record dense feature field name
-
     fixlen_feature_columns = [SparseFeat(feat, vocabulary_size=data[feat].nunique(), embedding_dim=4)
                               for i, feat in enumerate(sparse_features)] + [DenseFeat(feat, 1, )
                                                                             for feat in dense_features]
-
     dnn_feature_columns = fixlen_feature_columns
     linear_feature_columns = fixlen_feature_columns
 
@@ -33,29 +40,23 @@ if __name__ == "__main__":
 
     # 3.generate input data for model
 
-    # train, test = train_test_split(data, test_size=0.2, random_state=2020)
     train_model_input = {name: train[name] for name in feature_names}
     test_model_input = {name: test[name] for name in feature_names}
 
     # 4.Define Model,train,predict and evaluate
-    model = DeepFM2(linear_feature_columns, dnn_feature_columns, task='binary', dnn_dropout=dnn_dropout,
-                    afm_dropout=afm_dropout)
-
-    # opt = tf.keras.optimizers.SGD
+    # use_attention=False mean that it is the same as **standard Factorization Machine**
+    model = DeepFWFM(linear_feature_columns, dnn_feature_columns, task='binary', dnn_dropout=dropout)
     model.compile(optimizer, "binary_crossentropy",
                   metrics=METRICS)
-    # model.summary()
 
-    log_dir = prefix_dir + 'dafm_' + data_type + '_' + str(epochs)
-    if not os.path.exists(log_dir):  # 如果路径不存在
+    log_dir = prefix_dir + 'dfwfm_' + data_type + '_' + str(epochs)
+    if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
     logs = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
     history = model.fit(train_model_input, train[target].values,
-                        batch_size=256, epochs=epochs, verbose=2, validation_split=0.2,
-                        callbacks=[logs])
+                        batch_size=256, epochs=epochs, verbose=2, validation_split=0.2, callbacks=[logs])
+    pred_ans = model.predict(test_model_input, batch_size=256)
 
-    pred_ans = model.predict(test_model_input, batch_size=256, callbacks=[logs])
-
-    output(history, test, pred_ans, target, 'dafm', data_type, epochs, optimizer, dropout)
+    output(history, test, pred_ans, target, 'dfwfm', data_type, epochs, optimizer, dropout)

@@ -12,7 +12,7 @@ if __name__ == "__main__":
     epochs = 100
     optimizer = "adam"
     dropout = 0.5
-
+    data_type = 'enc'
     if sys.argv.__len__() == 3:
         data_type = sys.argv[1]
         epochs = int(sys.argv[2])

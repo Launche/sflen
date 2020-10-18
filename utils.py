@@ -1,43 +1,77 @@
 import pandas as pd
 from sklearn.metrics import log_loss, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 
+from constant import sparse_features, dense_features
 from database.db import insert
 from plot_curves import history_curves
 
 
 def get_data(origin):
-    if origin == "raw":
-        data = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
-        train = data[data['day'] < 29]
-        test = data[data['day'] >= 29]
-        train.drop(columns=['id', 'day'], inplace=True)
-        test.drop(columns=['id', 'day'], inplace=True)
-        print("This model is using raw data ...")
+    # if origin == "raw":
+    #     data = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+    #     train = data[data['day'] < 29]
+    #     test = data[data['day'] >= 29]
+    #     train.drop(columns=['id', 'day'], inplace=True)
+    #     test.drop(columns=['id', 'day'], inplace=True)
+    #     print("This model is using raw data ...")
+    #
+    #
+    # elif origin == "enc":
+    #     data = pd.read_csv('/tmp/data/avazu_data_100w_FE_smotenc.csv')
+    #     input_test = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+    #     train = data
+    #     test = input_test[input_test['day'] >= 29]
+    #     test.drop(columns=['id', 'day'], inplace=True)
+    #     print("This model is using smote data ...")
+    #
+    # elif origin == "enn":
+    #     data = pd.read_csv('/tmp/data/avazu_data_100w_FE_smotenn.csv')
+    #     input_test = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+    #     train = data
+    #     test = input_test[input_test['day'] >= 29]
+    #     test.drop(columns=['id', 'day'], inplace=True)
+    #     print("This model is using smote + enn data ...")
+    #
+    # elif origin == "tlk":
+    #     data = pd.read_csv('/tmp/data/avazu_data_100w_FE_tomeklink.csv')
+    #     input_test = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+    #     train = data
+    #     test = input_test[input_test['day'] >= 29]
+    #     test.drop(columns=['id', 'day'], inplace=True)
+    #     print("This model is using tomeklink data ...")
 
-
-    elif origin == "enc":
-        data = pd.read_csv('/tmp/data/avazu_data_100w_FE_smotenc.csv')
-        input_test = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+    if origin == "enc":
+        data = pd.read_csv('/tmp/data/mayi_smotenc_train_03.csv')
+        test = pd.read_csv('/tmp/data/mayi_smotenc_test_03.csv')
         train = data
-        test = input_test[input_test['day'] >= 29]
-        test.drop(columns=['id', 'day'], inplace=True)
-        print("This model is using smote data ...")
+        print("=====================This model is using enc data ... =====================")
+
+    elif origin == "raw":
+        data = pd.read_csv('/tmp/data/small_train.csv')
+        data[sparse_features] = data[sparse_features].fillna('-1', )
+        for feat in sparse_features:
+            lbe = LabelEncoder()
+            data[feat] = lbe.fit_transform(data[feat])
+
+        for feat in dense_features:
+            minmax = MinMaxScaler()
+            data[feat] = minmax.fit_transform(data[feat].values.reshape(-1, 1))
+        train, test = train_test_split(data, test_size=0.2, random_state=2020)
+        print("=====================This model is using raw data ... =====================")
 
     elif origin == "enn":
-        data = pd.read_csv('/tmp/data/avazu_data_100w_FE_smotenn.csv')
-        input_test = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+        data = pd.read_csv('/tmp/data/mayi_smotenn_train_03.csv')
+        test = pd.read_csv('/tmp/data/mayi_smotenc_test_03.csv')
         train = data
-        test = input_test[input_test['day'] >= 29]
-        test.drop(columns=['id', 'day'], inplace=True)
-        print("This model is using smote + enn data ...")
+        print("=====================This model is using enn data ... =====================")
 
     elif origin == "tlk":
-        data = pd.read_csv('/tmp/data/avazu_data_100w_FE_tomeklink.csv')
-        input_test = pd.read_csv('/tmp/data/avazu_data_100w_FE.csv')
+        data = pd.read_csv('/tmp/data/mayi_tomelink_train_03.csv')
+        test = pd.read_csv('/tmp/data/mayi_smotenc_test_03.csv')
         train = data
-        test = input_test[input_test['day'] >= 29]
-        test.drop(columns=['id', 'day'], inplace=True)
-        print("This model is using tomeklink data ...")
+        print("=====================This model is using tlk data ... =====================")
 
     return data, train, test
 
@@ -49,3 +83,7 @@ def output(history, test, pred_ans, target, algo, data_type, epoch, optimizer, d
     print("test AUC", auc)
     history_curves(history)
     insert(algo, data_type, epoch, optimizer, dropout, logLoss, auc)
+    print("Successfully insert ...")
+
+
+
