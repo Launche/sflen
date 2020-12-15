@@ -14,8 +14,8 @@ import tensorflow as tf
 #                   'device_model', 'C14', 'C17', 'C19', 'C20', 'C21']
 # dense_features_test = ['site_id', 'site_domain', 'app_id', 'device_id', 'device_ip', 'device_model', 'C14', 'C17',
 #                        'C20']
-dense_features = ['site_id', 'site_domain', 'app_id', 'app_domain', #'device_id',
-                   'device_ip',
+dense_features = ['site_id', 'site_domain', 'app_id', 'app_domain', 'device_id',
+                   #'device_ip',
                   'device_model', 'C14', 'C17', 'C19', 'C20', 'C21']
 
 categorical_features = ['hour', 'C1', 'banner_pos',
@@ -23,8 +23,8 @@ categorical_features = ['hour', 'C1', 'banner_pos',
                         'device_type', 'device_conn_type', 'C15', 'C16', 'C18']
 
 sparse_features = ['hour', 'C1', 'banner_pos', 'site_id', 'site_domain',
-                   'site_category', 'app_id', 'app_domain', 'app_category', 'device_ip',
-                   #'device_id',
+                   'site_category', 'app_id', 'app_domain', 'app_category', #'device_ip',
+                   'device_id',
                    'device_model', 'device_type', 'device_conn_type', 'C14', 'C15', 'C16', 'C17', 'C18',
                    'C19', 'C20', 'C21']
 target = ['click']
